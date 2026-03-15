@@ -1,0 +1,112 @@
+---
+title: "MTH6139 Time Series" 
+subtitle: "A Time Series Analysis and Forecast of Nottingham Forest Premier League Home Attendance in the 2024-2025 Season" 
+author: "Emilie Louise Crate" 
+date: "Spring term 2026" 
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: spacelab 
+    highlight: tango
+---
+
+```{r, echo=FALSE}
+# This code will display the QMUL logo at the top right of the page
+# Do not change this code
+htmltools::img(src = knitr::image_uri("images/QMlogo.png"),
+               alt = 'logo',
+               style = 'position:absolute; top:0; right:0; padding:10px; width:20%;')
+```
+
+# Introduction
+
+During the 2024-2025 season, Nottingham Forest had their first successful season in the Premier League, eventually qualifying for the Europa League. This project analyses the club's home match attendance in the Premier League during this period. The aim is to explore the behaviour of attendance as a time series and apply Meta's Prophet forecasting system to predict future attendance levels. Football attendance provides an interesting example of a time series as it reflects club performance, fan demand, ticket pricing and the capacity constraints of the City Ground, Nottingham Forest's home stadium. 
+
+# Data
+
+The dataset used was collected from FBref and contains only the home Premier League fixtures for the 2024-2025 season. The data includes the match date and the recorded attendance at the City Ground. The attendance values were converted to numeric format so they can be used for statistical analysis and forecasting.
+
+```{r}
+forest_data <-read.csv("data_230084700/nottingham_forest_home_attendance_2024_2025.csv")
+
+forest_data$Attendance <- as.numeric(gsub(",", "", forest_data$Attendance))
+
+forest_data$Date <- as.Date(forest_data$Date)
+
+head(forest_data)
+```
+
+# Exploratory Analysis
+
+```{r}
+plot(forest_data$Date,
+     forest_data$Attendance,
+     type = "b",
+     main = "Nottingham Forest Home Attendance in the PL 2024-2025",
+     xlab = "Date",
+     ylab = "Attendance")
+```
+
+The time series plot shows that home attendance remains relatively stable across the November to April period, attracting around 30,000 spectators. At the beginning of the season, from August to October, there is an incline in the attendance. This may reflect the positive momentum from Nottingham Forest's strong results, which could contribute to an increased demand for match tickets. 
+
+A noticeable drop occurs in October, during a Monday Night fixture against London club, Crystal Palace. Midweek fixtures are often less convenient for supporters compared with weekend matches, which may explain the lower match attendance. 
+
+A second significant drop occurs later in the season, in a Thursday night fixture against Brentford. Again, the weekday scheduling may be the biggest factor contributing to a reduced attendance. 
+
+It should also be noticed that the attendance figures do not distinguish between home and away supporters. Midweek matches against London clubs, such as Crystal Palace and Brentford, may attract fewer travelling fans due to the distance involved, which could also contribute to a slightly lower recorded attendance. 
+
+Overall, the time series does not show large fluctuations in attendance, suggesting that demand for Nottingham Forest home fixtures, in the Premier League, remained consistently strong throughout the season. The pattern suggests that once the season progressed, attendance settled close to the stadiums capacity limit, resulting in relatively small fluctuations around 30,000 spectators. 
+
+#Prophet Forecasting Model
+
+```{r}
+attendance_data <- data.frame(
+    ds = forest_data$Date,
+    y = forest_data$Attendance
+)
+
+head(attendance_data)
+```
+
+```{r}
+library(prophet)
+
+attendance_model <- prophet(attendance_data, weekly.seasonality = FALSE)
+
+```
+
+```{r}
+future_dates <- make_future_dataframe(attendance_model, periods = 3)
+
+forecast <- predict(attendance_model, future_dates)
+```
+
+```{r}
+plot(attendance_model, forecast)
+```
+
+```{r}
+prophet_plot_components(attendance_model, forecast)
+```
+
+
+To produce a more appropriate representation of the attendance trend for Nottingham Forest Premier League home fixtures, the Prophet model was refitted with 'weekly.seasonality = FALSE'. After examining the initial model with the default settings, it became clear that the dataset consists of individual football matches rather than regularly spaced observations. Matches occur on different days of the week, and not every week, meaning there is insufficient information for a reliable estimate on a weekly seasonal pattern. Including weekly seasonality in such a small and irregular dataset may lead to misleading results due to over-fitting.
+
+The forecast plot shows the observed attendance as black points and the fitted Prophet trend as a blue line. The shaded region represents the model's uncertainty interval. Up until January, the forecast shows a slight increase in match attendance, before declining slightly towards the end of the football season, along with stable attendance sitting at around 30,000 spectators for most matches. Overall, the forecast indicates that attendance is expected to remain close to stadium capacity, with small fluctuations around the 30,000 spectator level. 
+
+The component plot produced demonstrates the estimated trend in attendance over time. It shows a gradual increase during the beginning of the Premier League campaign, and a slight decline towards the final matches. This behaviour broadly reflects the pattern observed in the raw time series. However, the relatively small variation in attendance is potentially influenced by the capacity constraints of the City Ground, limiting the number of spectators that can attend each match. 
+
+The dataset used in this analysis contains a relatively small number of observations, representing only the home fixtures from one Premier League season. Prophet models are generally applied to larger time series datasets with more frequent observations. 
+
+# Conclusion
+
+This project explored Nottingham Forest's Premier League home attendance during the 2024-2025 season using a time series approach and forecasted using Meta Prophet. The data showed that attendance remained consistently high throughout the season, with most matches attracting around 30,000 spectators. Although there were some noticeable drops in attendance during the midweek fixtures, the overall pattern suggests that the demand for Nottingham Forest home matches remained strong, and close to The City Ground's capacity. Meta Prophet's forecasting framework was applied to model the attendance time series and estimate future trends. By adjusting the model to remove weekly seasonality, the resulting forecasts indicated that attendance is likely to remain close to stadium capacity, with only small fluctuations expected. This behaviour is consistent with historical data and reflects the capacity constraints of The City Ground. The size of the dataset used was relatively small, so forecasts should be interpreted with caution, however the analysis still demonstrates that Meta Prophet can be applied to real-world sports data to explore attendance trends and generate useful forecasting insights. 
+
+# References
+
+- FBref. (2025). *2024-2025 Nottingham Forest Scores and fixtures, Premier League * Available at: https://fbref.com/en/squads/e4a775cb/2024-2025/matchlogs/c9/schedule/Nottingham-Forest-Scores-and-Fixtures-Premier-League (Accessed: 14 March 2026). 
+
+- Marsh, E. et al. (2026) *City Ground: Nottingham Forest FC, Football Ground Guide.* Available at: https://footballgroundguide.com/leagues/england/championship/city-ground-nottingham-forest.html (Accessed: 14 March 2026). 
+
+- Meta. (2024) *Forecasting at scale. Prophet.* Available at: http://facebook.github.io/prophet/ (Accessed: 14 March 2026). 
